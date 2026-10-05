@@ -1,0 +1,225 @@
+@import '@fontsource-variable/fraunces';
+@import 'tailwindcss';
+
+/* =============================================================================
+   Lunelle design tokens
+   -----------------------------------------------------------------------------
+   All colours live here. Components use the Tailwind utilities generated from
+   the @theme block below (bg-surface, text-ink, bg-phase-luteal-soft, …) and
+   never hard-code hex values. Dark mode simply redefines the raw tokens.
+   ============================================================================= */
+
+:root {
+  color-scheme: light;
+
+  /* Neutrals — warm, calm, not clinical */
+  --lu-bg: #f7f4f0;
+  --lu-surface: #ffffff;
+  --lu-surface-muted: #f2eee9;
+  --lu-surface-sunken: #ebe6e0;
+  --lu-border: #e3ddd5;
+  --lu-border-strong: #cfc7bd;
+
+  /* Text — deep plum ink; all pass WCAG AA on bg and surface */
+  --lu-ink: #221c2e;
+  --lu-ink-muted: #585163;
+  --lu-ink-subtle: #6c6577;
+
+  /* Accent — "dusk" violet */
+  --lu-accent: #5b4a8b;
+  --lu-accent-hover: #4b3c78;
+  --lu-accent-soft: #ece8f5;
+  --lu-accent-ink: #45376e;
+  --lu-on-accent: #ffffff;
+
+  /* Feedback */
+  --lu-danger: #b42318;
+  --lu-danger-hover: #93190f;
+  --lu-danger-soft: #fdecea;
+  --lu-success: #23704f;
+  --lu-success-soft: #e3f3ea;
+  --lu-warning: #8a5300;
+  --lu-warning-soft: #fcf0dc;
+
+  /* Cycle phases: a strong tone (icons, text, rings) + a soft tint (fills) */
+  --lu-menstruation: #b8435a;
+  --lu-menstruation-soft: #f8e2e6;
+  --lu-follicular: #3f7a59;
+  --lu-follicular-soft: #e1efe6;
+  --lu-ovulation: #9c6410;
+  --lu-ovulation-soft: #f9ecd3;
+  --lu-luteal: #5257a0;
+  --lu-luteal-soft: #e4e5f4;
+  --lu-intimacy: #b3365f;
+  --lu-intimacy-soft: #f7e1e8;
+
+  --lu-focus: #5b4a8b;
+  --lu-shadow-color: 34 28 46;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+    --lu-bg: #15121c;
+    --lu-surface: #1e1a27;
+    --lu-surface-muted: #272233;
+    --lu-surface-sunken: #110e17;
+    --lu-border: #352f42;
+    --lu-border-strong: #4a4358;
+
+    --lu-ink: #f3eff8;
+    --lu-ink-muted: #c3bccf;
+    --lu-ink-subtle: #a69fb3;
+
+    --lu-accent: #b5a5ea;
+    --lu-accent-hover: #c8bbf2;
+    --lu-accent-soft: #2e2843;
+    --lu-accent-ink: #d3c9f5;
+    --lu-on-accent: #1a1524;
+
+    --lu-danger: #f2877d;
+    --lu-danger-hover: #f6a39b;
+    --lu-danger-soft: #3a1d1d;
+    --lu-success: #7fd1a8;
+    --lu-success-soft: #18302a;
+    --lu-warning: #f0c072;
+    --lu-warning-soft: #352a17;
+
+    --lu-menstruation: #ef8fa2;
+    --lu-menstruation-soft: #3b1f29;
+    --lu-follicular: #8fd0aa;
+    --lu-follicular-soft: #1b3127;
+    --lu-ovulation: #f0bf6a;
+    --lu-ovulation-soft: #382a14;
+    --lu-luteal: #a9adf0;
+    --lu-luteal-soft: #262842;
+    --lu-intimacy: #f08bad;
+    --lu-intimacy-soft: #3b1e2a;
+
+    --lu-focus: #b5a5ea;
+    --lu-shadow-color: 0 0 0;
+  }
+}
+
+@theme inline {
+  --color-bg: var(--lu-bg);
+  --color-surface: var(--lu-surface);
+  --color-surface-muted: var(--lu-surface-muted);
+  --color-surface-sunken: var(--lu-surface-sunken);
+  --color-border: var(--lu-border);
+  --color-border-strong: var(--lu-border-strong);
+
+  --color-ink: var(--lu-ink);
+  --color-ink-muted: var(--lu-ink-muted);
+  --color-ink-subtle: var(--lu-ink-subtle);
+
+  --color-accent: var(--lu-accent);
+  --color-accent-hover: var(--lu-accent-hover);
+  --color-accent-soft: var(--lu-accent-soft);
+  --color-accent-ink: var(--lu-accent-ink);
+  --color-on-accent: var(--lu-on-accent);
+
+  --color-danger: var(--lu-danger);
+  --color-danger-hover: var(--lu-danger-hover);
+  --color-danger-soft: var(--lu-danger-soft);
+  --color-success: var(--lu-success);
+  --color-success-soft: var(--lu-success-soft);
+  --color-warning: var(--lu-warning);
+  --color-warning-soft: var(--lu-warning-soft);
+
+  --color-phase-menstruation: var(--lu-menstruation);
+  --color-phase-menstruation-soft: var(--lu-menstruation-soft);
+  --color-phase-follicular: var(--lu-follicular);
+  --color-phase-follicular-soft: var(--lu-follicular-soft);
+  --color-phase-ovulation: var(--lu-ovulation);
+  --color-phase-ovulation-soft: var(--lu-ovulation-soft);
+  --color-phase-luteal: var(--lu-luteal);
+  --color-phase-luteal-soft: var(--lu-luteal-soft);
+  --color-intimacy: var(--lu-intimacy);
+  --color-intimacy-soft: var(--lu-intimacy-soft);
+
+  --color-focus: var(--lu-focus);
+}
+
+@theme {
+  --font-sans: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-display: 'Fraunces Variable', 'Iowan Old Style', 'Palatino Linotype', Georgia, serif;
+
+  --radius-card: 1.25rem;
+  --radius-control: 0.875rem;
+
+  --shadow-card: 0 1px 2px rgb(var(--lu-shadow-color) / 0.04), 0 4px 16px -4px rgb(var(--lu-shadow-color) / 0.08);
+  --shadow-raised: 0 2px 4px rgb(var(--lu-shadow-color) / 0.06), 0 16px 40px -8px rgb(var(--lu-shadow-color) / 0.18);
+
+  --animate-fade-in: fade-in 180ms ease-out;
+  --animate-slide-up: slide-up 220ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  --animate-toast-in: toast-in 220ms cubic-bezier(0.2, 0.8, 0.2, 1);
+
+  @keyframes fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  @keyframes slide-up {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes toast-in {
+    from { opacity: 0; transform: translateY(-8px) scale(0.98); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+  }
+}
+
+/* -----------------------------------------------------------------------------
+   Base
+   -------------------------------------------------------------------------- */
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    @apply bg-bg text-ink font-sans antialiased;
+    min-height: 100dvh;
+    overscroll-behavior-y: none;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-focus);
+    outline-offset: 2px;
+  }
+
+  ::selection {
+    background: var(--color-accent-soft);
+  }
+
+  /* Native <dialog> backdrop */
+  dialog::backdrop {
+    background: rgb(var(--lu-shadow-color) / 0.45);
+    backdrop-filter: blur(2px);
+  }
+
+  input[type='date'],
+  input[type='datetime-local'] {
+    min-height: 2.75rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Utilities for app-like safe areas on iOS/Android */
+@utility pb-safe {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+@utility pt-safe {
+  padding-top: env(safe-area-inset-top);
+}
