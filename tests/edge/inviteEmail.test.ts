@@ -1,31 +1,36 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest';
-import { buildInviteEmail, sanitizeName } from '../../supabase/functions/send-partner-invite/email.ts';
+import {
+  appBase,
+  buildInviteEmail,
+  buildSignInEmail,
+  requestLinkUrl,
+  sanitizeName,
+} from '../../supabase/functions/_shared/email.ts';
+
+const LINK = 'https://micach02.github.io/lunelle/shared-access?token_hash=abc&type=magiclink';
+const APP = 'https://micach02.github.io/lunelle/';
+
+describe('app URLs', () => {
+  it('keeps a sub-path such as GitHub Pages and drops query strings', () => {
+    expect(appBase('https://micach02.github.io/lunelle/?utm=x#top')).toBe('https://micach02.github.io/lunelle');
+    expect(appBase('https://lunelle.example.com/')).toBe('https://lunelle.example.com');
+    expect(requestLinkUrl(APP)).toBe('https://micach02.github.io/lunelle/shared-access');
+  });
+});
 
 describe('partner invitation email', () => {
-  const email = buildInviteEmail({
-    inviterName: 'Sarah',
-    partnerEmail: 'alex@example.com',
-    appUrl: 'https://lunelle.example.com/',
-  });
+  const email = buildInviteEmail({ inviterName: 'Sarah', signInLink: LINK, appUrl: APP });
 
-  it('links to the partner page on the configured app URL', () => {
-    expect(email.text).toContain('https://lunelle.example.com/partner');
-    expect(email.html).toContain('href="https://lunelle.example.com/partner"');
-  });
-
-  it('keeps a sub-path such as GitHub Pages and drops query strings', () => {
-    const pages = buildInviteEmail({
-      inviterName: 'Sarah',
-      partnerEmail: 'alex@example.com',
-      appUrl: 'https://micach02.github.io/lunelle/?utm=x#top',
-    });
-    expect(pages.text).toContain('https://micach02.github.io/lunelle/partner');
-  });
-
-  it('names the inviter and the address to sign up with', () => {
+  it('contains the one-time sign-in link and says no sign-up is needed', () => {
     expect(email.subject).toBe('Sarah invited you to Lunelle');
-    expect(email.text).toContain('alex@example.com');
+    expect(email.text).toContain(LINK);
+    expect(email.html).toContain(`href="${LINK.replace(/&/g, '&amp;')}"`);
+    expect(email.text).toMatch(/No sign-up needed/);
+  });
+
+  it('tells the partner where to get a new link', () => {
+    expect(email.text).toContain('https://micach02.github.io/lunelle/shared-access');
   });
 
   it('contains no health data', () => {
@@ -37,8 +42,8 @@ describe('partner invitation email', () => {
   it('escapes user-controlled names in HTML and flattens them in the subject', () => {
     const hostile = buildInviteEmail({
       inviterName: '<img src=x onerror=alert(1)>\r\nBcc: evil@example.com',
-      partnerEmail: 'alex@example.com',
-      appUrl: 'https://lunelle.example.com',
+      signInLink: LINK,
+      appUrl: APP,
     });
     expect(hostile.html).not.toContain('<img');
     expect(hostile.html).toContain('&lt;img');
@@ -48,5 +53,14 @@ describe('partner invitation email', () => {
   it('falls back when the inviter has no name and caps long names', () => {
     expect(sanitizeName('   ')).toBe('Someone you know');
     expect(sanitizeName('x'.repeat(200))).toHaveLength(80);
+  });
+});
+
+describe('sign-in email', () => {
+  it('contains only the link and no inviter or health details', () => {
+    const email = buildSignInEmail({ signInLink: LINK, appUrl: APP });
+    expect(email.subject).toBe('Your Lunelle sign-in link');
+    expect(email.text).toContain(LINK);
+    expect(email.text.toLowerCase()).not.toMatch(/fertile|intimacy|symptom/);
   });
 });

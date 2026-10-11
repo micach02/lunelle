@@ -9,6 +9,8 @@ export function ProtectedRoute({ children }: { children: ReactNode }) {
   const location = useLocation();
   if (status === 'loading') return <FullPageSpinner />;
   if (status === 'unauthenticated') {
+    // Partners sign in with an emailed link instead of a password.
+    if (location.pathname.startsWith('/partner')) return <Navigate to="/shared-access" replace />;
     return <Navigate to="/login" replace state={{ from: location.pathname }} />;
   }
   return <>{children}</>;

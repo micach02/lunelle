@@ -36,7 +36,7 @@ Lunelle is a private, mobile-first web app for tracking menstrual periods, cycle
 | **Symptoms & mood** | Cramps, headache, bloating, breast tenderness, fatigue, acne, back pain, nausea and other symptoms, plus six moods and notes. One log per day. |
 | **Insights** | Average, shortest and longest cycle; average period length; cycle-length and period-length charts (each with a table view); symptom trends with the phase each is most common in; mood distribution; full cycle history. |
 | **Settings** | Profile, cycle-length fallbacks, a privacy explanation, change email or password, sign out, and permanent account deletion (type `DELETE` to confirm). |
-| **Partner sharing** | Invite one partner by email to **view** your cycle. Cycle phases and periods are always included. Symptoms & mood, intimacy records and notes are separate opt-in switches, all off by default. The partner can never edit anything, and you can change what's shared or stop sharing at any time. The invite email is sent automatically by a Supabase Edge Function. |
+| **Partner sharing** | Invite one partner by email to **view** your cycle. Cycle phases and periods are always included. Symptoms & mood, intimacy records and notes are separate opt-in switches, all off by default. The partner can never edit anything, and you can change what's shared or stop sharing at any time. The invite email is sent automatically by a Supabase Edge Function. **Partners never sign up or set a password**: the email contains a one-time sign-in link, and people who only view get a focused "viewer mode". |
 | **PWA** | Installable manifest and icons. The service worker caches only the static app shell and never caches API data. |
 
 **Recorded vs. estimated.** Every value in the UI is labelled. Only period days you logged are **Recorded**. Phases, ovulation, the fertile window and future periods are marked **≈ Estimated**. Lunelle never shows a pregnancy probability and never uses wording like "safe day".
@@ -67,7 +67,7 @@ src/
   services/          Cross-feature service tests
   types/             database.ts (Supabase types), domain.ts
 supabase/migrations/ SQL migrations (schema, RLS, auth functions, partner sharing)
-supabase/functions/  Edge Function: send-partner-invite
+supabase/functions/  Edge Functions: send-partner-invite, send-partner-signin (+ _shared helpers)
 tests/db/            Real-Postgres RLS tests (PGlite)
 ```
 
@@ -115,6 +115,7 @@ Email links use the **PKCE** flow, so verification and reset links must be opene
 | `20261004000200_row_level_security.sql` | Enables RLS, revokes all privileges from `anon`, and adds per-operation owner policies for `authenticated`. |
 | `20261004000300_auth_functions.sql` | `handle_new_user()` (creates the profile and default settings on sign-up) and `delete_own_account()` (permanently deletes the caller's account and data). |
 | `20261005000100_partner_sharing.sql` | The `partner_shares` table (the owner can only read it; every change goes through functions), the invite, accept, decline and revoke functions, and `get_partner_shared_data()`, which is the only way a partner can read shared data. Also updates `delete_own_account()` to remove shares. |
+| `20261011000100_partner_signin_links.sql` | `claim_partner_signin_link()`, callable only by the service role. It allows a fresh partner sign-in email only for addresses with an active share, at most once a minute and ten times a day. Request rows are kept for two days. |
 
 **Option A: Supabase CLI (recommended)**
 
@@ -125,7 +126,7 @@ npx supabase link --project-ref YOUR_PROJECT_REF
 npx supabase db push
 ```
 
-**Option B: SQL editor.** Paste and run the four files in order.
+**Option B: SQL editor.** Paste and run the five files in order.
 
 After changing the schema, regenerate types:
 `npx supabase gen types typescript --project-id YOUR_PROJECT_REF > src/types/database.ts`
@@ -184,7 +185,9 @@ npm run lint
 | `schemas.test.ts`, `calendarModel.test.ts`, `insights.test.ts` | Form validation, calendar grids (leap years, week start), spoken day labels, symptom and mood trends. |
 | `appSmoke.test.tsx` | Mounts the real route tree for a signed-in user with seeded data and renders every screen. |
 | `tests/db/partnerSharing.test.ts` | Invite rules (no self-invite, one active share, daily limit), verified-email matching, accept, decline and revoke, category and notes filtering, no direct table access for partners, owner-only scope changes, resend cooldown. |
-| `tests/edge/inviteEmail.test.ts` | Invite email content: no health data, HTML escaping of names, a header-safe subject line. |
+| `tests/edge/inviteEmail.test.ts` | Invite and sign-in email content: no health data, HTML escaping of names, a header-safe subject line, sub-path-aware links. |
+| `tests/db/partnerSignin.test.ts` | Sign-in link requests: only for invited addresses, cooldown, daily cap, stops on revoke, never callable from a browser. |
+| `partnerAccess.test.tsx` | Password-less partner access: link sign-in (token removed from the URL), expired links, the generic "link sent" reply, redirects. |
 | `tests/db/rls.test.ts` | RLS and grants on every table, owner CRUD, cross-user isolation, anonymous denial, constraints, sign-up trigger, account deletion. |
 
 ## Production build
@@ -223,7 +226,16 @@ How it works on Pages:
 
 ## Partner invite emails (Edge Function)
 
-Invitations are emailed by `supabase/functions/send-partner-invite`. The function runs with the signed-in owner's own token and the public key, so RLS and the owner checks still apply; it never uses the service-role key. Emails are sent through [Resend](https://resend.com), which has a free tier.
+Partners never create an account or a password. Two functions handle their emails:
+
+- **`send-partner-invite`** (signed-in owners only) checks ownership with the owner's own token, then emails an invitation containing a **one-time sign-in link**.
+- **`send-partner-signin`** (public) lets a returning partner request a fresh link by email. It always gives the same reply, so it never reveals who has access.
+
+Clicking a link opens `/shared-access`, which exchanges the one-time token for a session (`verifyOtp`) and removes it from the address bar. Behind the scenes the partner has a password-less account tied to their email, which is why access stays revocable and can't be used by someone else.
+
+Creating sign-in links uses the Auth admin API, so **these functions use the service-role key**. Supabase injects that key into Edge Functions automatically; it is never in the website, the repo or GitHub. Emails are sent through [Resend](https://resend.com), which has a free tier.
+
+Recommended setting: **Authentication → Providers → Email → Email OTP Expiration** controls how long a sign-in link stays valid (default 1 hour). 24 hours (`86400`) is friendlier for invitations.
 
 1. **Set up Resend.** Create an account and an API key. To email any address you must [verify a sending domain](https://resend.com/domains). Until then, Resend's test sender (`onboarding@resend.dev`) can only email *your own* Resend account address, which is enough for testing.
 2. **Link the project** (once):
@@ -240,11 +252,19 @@ Invitations are emailed by `supabase/functions/send-partner-invite`. The functio
    npx supabase secrets set ALLOWED_ORIGINS=http://localhost:5173,http://localhost:5174
    ```
    `APP_URL` is used for the link in the email and is allowed as a browser origin. Add your dev origins to `ALLOWED_ORIGINS`.
-4. **Deploy:** `npx supabase functions deploy send-partner-invite`. Leave JWT verification on (the default).
+4. **Deploy:**
+   ```bash
+   npx supabase functions deploy send-partner-invite
+   npx supabase functions deploy send-partner-signin --no-verify-jwt
+   ```
+   `supabase/config.toml` also records these JWT settings: the invite function requires a signed-in owner; the sign-in function is public by design.
 
 If the email can't be sent, the invitation is still created. The owner sees the error and can press **Resend email** in Settings. Resends are limited to one per minute, and new invitations to five per day.
 
-**How the partner accepts:** they open the link, then sign in or create an account **with the invited email address**, verify it, and accept under **Shared with you**. That page is also reachable from the dashboard banner and the "Shared" nav item.
+**How the partner accepts:** they tap **Open shared view** in the email, which signs them in. They then accept under **Shared with you**.
+
+- **Coming back later:** they use **Get a sign-in link** on the login page (or `/shared-access`).
+- **Viewer mode:** someone who has never recorded a period of their own gets only **Shared** and **Settings** in the navigation. Recording a period switches them to the full app.
 
 ## How the cycle estimates work
 

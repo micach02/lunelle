@@ -60,7 +60,7 @@ function InviteForm({ onCreated }: { onCreated: (share: OutgoingShare | null) =>
       <Field
         label="Partner’s email"
         error={errors.email?.message}
-        hint="They’ll need a Lunelle account with this email address to accept."
+        hint="No account or password needed. They’ll get an email with a link that signs them in."
       >
         {({ id, describedBy, invalid }) => (
           <Input

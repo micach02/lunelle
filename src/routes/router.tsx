@@ -3,6 +3,7 @@ import { BASE_PATH } from '@/lib/env';
 import { AuthCallbackPage } from '@/pages/auth/AuthCallbackPage';
 import { ForgotPasswordPage } from '@/pages/auth/ForgotPasswordPage';
 import { LoginPage } from '@/pages/auth/LoginPage';
+import { PartnerAccessPage } from '@/pages/auth/PartnerAccessPage';
 import { ResetPasswordPage } from '@/pages/auth/ResetPasswordPage';
 import { SignupPage } from '@/pages/auth/SignupPage';
 import { VerifyEmailPage } from '@/pages/auth/VerifyEmailPage';
@@ -28,6 +29,7 @@ export const routes = [
       { path: '/verify-email', element: <PublicOnlyRoute><VerifyEmailPage /></PublicOnlyRoute> },
       { path: '/reset-password', element: <ResetPasswordPage /> },
       { path: '/auth/callback', element: <AuthCallbackPage /> },
+      { path: '/shared-access', element: <PartnerAccessPage /> },
       {
         element: (
           <ProtectedRoute>

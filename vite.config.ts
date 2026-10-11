@@ -61,5 +61,7 @@ export default defineConfig({
     css: false,
     include: ['src/**/*.test.{ts,tsx}', 'tests/**/*.test.ts'],
     testTimeout: 30000,
+    // Each DB test file boots its own Postgres (PGlite); allow for parallel start-up.
+    hookTimeout: 60000,
   },
 });

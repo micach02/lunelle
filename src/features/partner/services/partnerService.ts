@@ -174,6 +174,37 @@ export async function leaveShare(shareId: string): Promise<void> {
   if (error) throw error;
 }
 
+// -----------------------------------------------------------------------------
+// Password-less partner sign-in
+// -----------------------------------------------------------------------------
+
+/** Link types the send-partner-* functions can produce. */
+const SIGN_IN_LINK_TYPES = ['magiclink', 'signup', 'invite', 'email'] as const;
+export type SignInLinkType = (typeof SIGN_IN_LINK_TYPES)[number];
+
+export function isSignInLinkType(value: string | null): value is SignInLinkType {
+  return value !== null && (SIGN_IN_LINK_TYPES as readonly string[]).includes(value);
+}
+
+/** Exchange the one-time token from a partner email link for a session. */
+export async function verifySignInLink(tokenHash: string, type: SignInLinkType): Promise<void> {
+  const { error } = await getSupabase().auth.verifyOtp({ token_hash: tokenHash, type });
+  if (error) throw error;
+}
+
+/**
+ * Ask for a fresh sign-in link. The server always answers the same way so it
+ * never reveals whether an address has access to anything.
+ */
+export async function requestSignInLink(email: string): Promise<void> {
+  const { error } = await getSupabase().functions.invoke('send-partner-signin', {
+    body: { email: email.trim().toLowerCase() },
+  });
+  if (error) {
+    throw new UserFacingError('We couldn’t send a sign-in link right now. Please try again in a minute.');
+  }
+}
+
 type JsonObject = { [key: string]: Json | undefined };
 
 function asObject(value: Json | undefined): JsonObject {

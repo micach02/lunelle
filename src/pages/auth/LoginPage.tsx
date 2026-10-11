@@ -45,6 +45,12 @@ export function LoginPage() {
           <Link to="/signup" className="font-medium text-accent hover:underline">
             Create an account
           </Link>
+          <span className="mt-2 block">
+            Someone shared their cycle with you?{' '}
+            <Link to="/shared-access" className="font-medium text-accent hover:underline">
+              Get a sign-in link
+            </Link>
+          </span>
         </>
       }
     >

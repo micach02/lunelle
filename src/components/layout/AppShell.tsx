@@ -8,7 +8,8 @@ import { NAV_ITEMS, type NavItem } from './navigation';
 
 interface AppShellProps {
   children: ReactNode;
-  onQuickAdd: () => void;
+  /** Omit to hide the "New record" buttons (viewer mode). */
+  onQuickAdd?: () => void;
   /** Defaults to the five main sections. */
   navItems?: NavItem[];
 }
@@ -30,9 +31,11 @@ export function AppShell({ children, onQuickAdd, navItems = NAV_ITEMS }: AppShel
       {/* Desktop sidebar */}
       <aside className="fixed inset-y-0 left-0 hidden w-64 flex-col border-r border-border bg-surface/70 px-4 py-6 backdrop-blur lg:flex">
         <Logo showTagline className="px-2" />
-        <Button className="mt-8" fullWidth icon={<Plus className="size-4" />} onClick={onQuickAdd}>
-          New record
-        </Button>
+        {onQuickAdd && (
+          <Button className="mt-8" fullWidth icon={<Plus className="size-4" />} onClick={onQuickAdd}>
+            New record
+          </Button>
+        )}
         <nav aria-label="Main" className="mt-6 flex-1">
           <ul className="space-y-1">
             {navItems.map(({ to, label, icon: Icon, end }) => (
@@ -66,9 +69,11 @@ export function AppShell({ children, onQuickAdd, navItems = NAV_ITEMS }: AppShel
       <header className="pt-safe sticky top-0 z-30 border-b border-border/70 bg-bg/85 backdrop-blur-md lg:hidden">
         <div className="flex h-14 items-center justify-between px-4">
           <Logo />
-          <Button size="icon" variant="soft" onClick={onQuickAdd} aria-label="New record" className="rounded-full">
-            <Plus className="size-5" aria-hidden />
-          </Button>
+          {onQuickAdd && (
+            <Button size="icon" variant="soft" onClick={onQuickAdd} aria-label="New record" className="rounded-full">
+              <Plus className="size-5" aria-hidden />
+            </Button>
+          )}
         </div>
       </header>
 

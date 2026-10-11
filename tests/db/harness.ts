@@ -89,6 +89,17 @@ export async function asUser<T>(db: PGlite, userId: string, fn: () => Promise<T>
   }
 }
 
+/** Run `fn` as a server-side call with the service role (e.g. an Edge Function). */
+export async function asServiceRole<T>(db: PGlite, fn: () => Promise<T>): Promise<T> {
+  await db.query(`select set_config('request.jwt.claim.sub', '', false)`);
+  await db.query('set role service_role');
+  try {
+    return await fn();
+  } finally {
+    await db.query('reset role');
+  }
+}
+
 /** Run `fn` as an unauthenticated API request (anon key, no session). */
 export async function asAnon<T>(db: PGlite, fn: () => Promise<T>): Promise<T> {
   await db.query(`select set_config('request.jwt.claim.sub', '', false)`);

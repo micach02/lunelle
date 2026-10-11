@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { Link } from 'react-router';
+import { Link, Navigate } from 'react-router';
 import { ChevronRight, Pencil } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Card, CardHeader } from '@/components/ui/Card';
@@ -13,6 +13,7 @@ import { CycleOverviewCard } from '@/features/dashboard/components/CycleOverview
 import { QuickActions } from '@/features/dashboard/components/QuickActions';
 import { IntimacyRecordItem } from '@/features/intimacy/components/IntimacyRecordItem';
 import { PartnerBanner } from '@/features/partner/components/PartnerBanner';
+import { useViewerMode } from '@/features/partner/useViewerMode';
 import { SymptomSummary } from '@/features/symptoms/components/SymptomSummary';
 import { useRecordDialogs } from '@/features/tracking/RecordDialogs';
 import { useTracking } from '@/features/tracking/TrackingDataProvider';
@@ -59,6 +60,10 @@ export function DashboardPage() {
   const lastPeriod = periods[0];
   const name = profile?.displayName?.trim();
   const hello = `${greeting(new Date().getHours())}${name ? `, ${name}` : ''}`;
+  const viewerMode = useViewerMode();
+
+  // People who only view a partner's shared cycle start on the shared view.
+  if (viewerMode) return <Navigate to="/partner" replace />;
 
   return (
     <div className="space-y-6">

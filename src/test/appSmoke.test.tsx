@@ -64,7 +64,7 @@ const RPCS: Record<string, unknown> = {
   },
 };
 
-function fakeClientByTable(): LunelleSupabaseClient {
+function fakeClientByTable(tables: Record<string, unknown> = TABLES): LunelleSupabaseClient {
   return {
     from(table: string) {
       const builder: unknown = new Proxy(
@@ -72,7 +72,7 @@ function fakeClientByTable(): LunelleSupabaseClient {
         {
           get(_t, prop) {
             if (prop === 'then') {
-              return (resolve: (v: unknown) => unknown) => resolve({ data: TABLES[table], error: null });
+              return (resolve: (v: unknown) => unknown) => resolve({ data: tables[table], error: null });
             }
             return () => builder;
           },
@@ -100,8 +100,8 @@ beforeAll(() => {
 
 afterEach(() => setSupabaseClientForTesting(null));
 
-function renderAt(path: string) {
-  setSupabaseClientForTesting(fakeClientByTable());
+function renderAt(path: string, tables: Record<string, unknown> = TABLES) {
+  setSupabaseClientForTesting(fakeClientByTable(tables));
   const router = createMemoryRouter(routes, { initialEntries: [path] });
   render(
     <ToastProvider>
@@ -188,5 +188,15 @@ describe('signed-in app', () => {
     // Intimacy is not shared, and there are no edit controls.
     expect(screen.queryByRole('heading', { name: 'Intimacy' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Edit/ })).not.toBeInTheDocument();
+  });
+
+  it('gives someone who only views a shared cycle a focused viewer mode', async () => {
+    // No periods of their own, but a cycle is shared with them.
+    renderAt('/', { ...TABLES, periods: [], intercourse_records: [], symptoms: [] });
+    expect(await screen.findByRole('heading', { level: 2, name: 'Jordan’s cycle' })).toBeInTheDocument();
+    expect(screen.getAllByRole('link', { name: 'Shared' }).length).toBeGreaterThan(0);
+    expect(screen.queryByRole('link', { name: 'Calendar' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'New record' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Record your first period' })).toBeInTheDocument();
   });
 });

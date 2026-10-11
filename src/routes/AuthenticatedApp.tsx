@@ -3,6 +3,7 @@ import { Outlet } from 'react-router';
 import { AppShell } from '@/components/layout/AppShell';
 import { NAV_ITEMS, PARTNER_NAV_ITEM } from '@/components/layout/navigation';
 import { PartnerAccessProvider, usePartnerAccess } from '@/features/partner/PartnerAccessProvider';
+import { useViewerMode } from '@/features/partner/useViewerMode';
 import { ErrorState, Skeleton } from '@/components/ui/Feedback';
 import { useAuth } from '@/features/auth/AuthProvider';
 import { QuickAddDialog } from '@/features/tracking/QuickAddDialog';
@@ -38,12 +39,15 @@ function TrackingGate() {
 function Shell() {
   const [quickAddOpen, setQuickAddOpen] = useState(false);
   const { incoming } = usePartnerAccess();
-  const navItems = useMemo(
-    () => (incoming.length > 0 ? [...NAV_ITEMS.slice(0, -1), PARTNER_NAV_ITEM, NAV_ITEMS[NAV_ITEMS.length - 1]] : NAV_ITEMS),
-    [incoming.length],
-  );
+  const viewerMode = useViewerMode();
+  const settingsItem = NAV_ITEMS[NAV_ITEMS.length - 1];
+  const navItems = useMemo(() => {
+    if (viewerMode) return [PARTNER_NAV_ITEM, settingsItem];
+    if (incoming.length > 0) return [...NAV_ITEMS.slice(0, -1), PARTNER_NAV_ITEM, settingsItem];
+    return NAV_ITEMS;
+  }, [viewerMode, incoming.length, settingsItem]);
   return (
-    <AppShell onQuickAdd={() => setQuickAddOpen(true)} navItems={navItems}>
+    <AppShell onQuickAdd={viewerMode ? undefined : () => setQuickAddOpen(true)} navItems={navItems}>
       <TrackingGate />
       <QuickAddDialog open={quickAddOpen} onClose={() => setQuickAddOpen(false)} />
     </AppShell>
