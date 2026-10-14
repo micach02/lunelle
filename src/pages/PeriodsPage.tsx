@@ -7,6 +7,7 @@ import { DataBadge, EmptyState } from '@/components/ui/Feedback';
 import { predictionBasis } from '@/features/cycle/format';
 import { getPeriodDuration, getRecordedCycles } from '@/features/cycle/services/cycleCalculator';
 import { useRecordDialogs } from '@/features/tracking/RecordDialogs';
+import { PartnerBadge } from '@/features/partner/components/PartnerBadge';
 import { useTracking } from '@/features/tracking/TrackingDataProvider';
 import { formatDateRange, pluralizeDays } from '@/lib/dates';
 
@@ -74,6 +75,7 @@ export function PeriodsPage() {
                     <div className="flex flex-wrap items-center gap-2">
                       <h2 className="font-medium text-ink">{formatDateRange(period.startDate, period.endDate)}</h2>
                       <DataBadge kind="recorded" />
+                      {period.enteredByPartner && <PartnerBadge />}
                     </div>
                     <p className="text-sm text-ink-muted">
                       {duration ? `${pluralizeDays(duration)} period` : 'Ongoing — no end date yet'}

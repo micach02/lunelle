@@ -9,12 +9,12 @@ import {
   type ProtectionMethod,
 } from '@/types/domain';
 
-const COLUMNS = 'id, occurred_at, protection_method, ejaculation, emergency_contraception, notes';
+const COLUMNS = 'id, occurred_at, protection_method, ejaculation, emergency_contraception, notes, entered_by_partner';
 
 type Row = Pick<
   TableRow<'intercourse_records'>,
   'id' | 'occurred_at' | 'protection_method' | 'ejaculation' | 'emergency_contraception' | 'notes'
->;
+> & { entered_by_partner?: boolean };
 
 function oneOf<T extends string>(options: readonly T[], value: string, fallback: T): T {
   return (options as readonly string[]).includes(value) ? (value as T) : fallback;
@@ -28,6 +28,7 @@ export function mapIntimacyRecord(row: Row): IntimacyRecord {
     ejaculation: oneOf<Ejaculation>(EJACULATION_OPTIONS, row.ejaculation, 'unknown'),
     emergencyContraception: row.emergency_contraception,
     notes: row.notes,
+    enteredByPartner: row.entered_by_partner === true,
   };
 }
 

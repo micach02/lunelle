@@ -9,7 +9,7 @@ import { FertilityDisclaimer } from '@/components/ui/Feedback';
 import { Checkbox, ChoiceGroup, Field, FormError, Input, Textarea } from '@/components/ui/Form';
 import { useToast } from '@/components/ui/Toast';
 import { getFertileContext } from '@/features/cycle/services/cycleCalculator';
-import { useTracking } from '@/features/tracking/TrackingDataProvider';
+import { useRecordStore } from '@/features/tracking/recordStore';
 import { createIntimacySchema, type IntimacyFormValues } from '@/features/tracking/schemas';
 import {
   fromDateTimeLocalValue,
@@ -36,7 +36,7 @@ function defaultOccurredAt(defaultDate: ISODate | undefined, today: ISODate): st
 }
 
 export function IntimacyFormDialog({ onClose, record, defaultDate }: IntimacyFormDialogProps) {
-  const { today, timeline, saveIntimacy, deleteIntimacy } = useTracking();
+  const { today, timeline, saveIntimacy, deleteIntimacy, notesEditable, onBehalfOf } = useRecordStore();
   const toast = useToast();
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -101,10 +101,14 @@ export function IntimacyFormDialog({ onClose, record, defaultDate }: IntimacyFor
         onClose={onClose}
         dismissible={!isSubmitting}
         title={isEdit ? 'Edit intimacy record' : 'Record intimacy'}
-        description="Private to you. Only you can see these records."
+        description={
+          onBehalfOf
+            ? `Adding to ${onBehalfOf}’s records. They’ll see this was added by you.`
+            : 'Private to you. Only you can see these records.'
+        }
         footer={
           <>
-            {isEdit && (
+            {isEdit && deleteIntimacy && (
               <Button
                 variant="ghost"
                 className="text-danger hover:text-danger sm:mr-auto"
@@ -173,6 +177,7 @@ export function IntimacyFormDialog({ onClose, record, defaultDate }: IntimacyFor
             {...register('emergencyContraception')}
           />
 
+          {notesEditable && (
           <Field label="Notes" optional error={errors.notes?.message}>
             {({ id, describedBy, invalid }) => (
               <Textarea
@@ -185,6 +190,7 @@ export function IntimacyFormDialog({ onClose, record, defaultDate }: IntimacyFor
               />
             )}
           </Field>
+          )}
 
           <FertilityDisclaimer />
           <FormError message={submitError} />
@@ -198,7 +204,7 @@ export function IntimacyFormDialog({ onClose, record, defaultDate }: IntimacyFor
         confirmLabel="Delete record"
         destructive
         onConfirm={async () => {
-          if (!record) return;
+          if (!record || !deleteIntimacy) return;
           await deleteIntimacy(record.id);
           toast.success('Record deleted');
           onClose();

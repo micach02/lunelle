@@ -5,7 +5,15 @@ import { mapSymptomLog } from '@/features/symptoms/services/symptomService';
 import { getSupabase } from '@/lib/supabase';
 import { UserFacingError } from '@/lib/errors';
 import type { Json, TableRow } from '@/types/database';
-import type { IntimacyRecord, Period, SymptomLog } from '@/types/domain';
+import {
+  SYMPTOM_KEYS,
+  type IntimacyInput,
+  type IntimacyRecord,
+  type Period,
+  type PeriodInput,
+  type SymptomInput,
+  type SymptomLog,
+} from '@/types/domain';
 import {
   DEFAULT_CYCLE_LENGTH,
   DEFAULT_PERIOD_LENGTH,
@@ -17,6 +25,8 @@ export interface ShareScopes {
   symptoms: boolean;
   intimacy: boolean;
   notes: boolean;
+  /** Partner may add and edit (never delete) records in the shared categories. */
+  canEdit: boolean;
 }
 
 export type ShareStatus = 'pending' | 'accepted';
@@ -54,7 +64,7 @@ export interface SharedData {
 }
 
 const OUTGOING_COLUMNS =
-  'id, partner_email, status, share_symptoms, share_intimacy, share_notes, created_at, accepted_at, last_emailed_at';
+  'id, partner_email, status, share_symptoms, share_intimacy, share_notes, can_edit, created_at, accepted_at, last_emailed_at';
 
 function mapOutgoing(
   row: Pick<
@@ -65,6 +75,7 @@ function mapOutgoing(
     | 'share_symptoms'
     | 'share_intimacy'
     | 'share_notes'
+    | 'can_edit'
     | 'created_at'
     | 'accepted_at'
     | 'last_emailed_at'
@@ -74,7 +85,12 @@ function mapOutgoing(
     id: row.id,
     partnerEmail: row.partner_email,
     status: row.status === 'accepted' ? 'accepted' : 'pending',
-    scopes: { symptoms: row.share_symptoms, intimacy: row.share_intimacy, notes: row.share_notes },
+    scopes: {
+      symptoms: row.share_symptoms,
+      intimacy: row.share_intimacy,
+      notes: row.share_notes,
+      canEdit: row.can_edit,
+    },
     invitedAt: row.created_at,
     acceptedAt: row.accepted_at,
     lastEmailedAt: row.last_emailed_at,
@@ -103,6 +119,7 @@ export async function createInvite(partnerEmail: string, scopes: ShareScopes): P
     p_share_symptoms: scopes.symptoms,
     p_share_intimacy: scopes.intimacy,
     p_share_notes: scopes.notes,
+    p_can_edit: scopes.canEdit,
   });
   if (error) throw error;
   return data;
@@ -135,6 +152,7 @@ export async function updateShareScopes(shareId: string, scopes: ShareScopes): P
     p_share_symptoms: scopes.symptoms,
     p_share_intimacy: scopes.intimacy,
     p_share_notes: scopes.notes,
+    p_can_edit: scopes.canEdit,
   });
   if (error) throw error;
 }
@@ -157,7 +175,12 @@ export async function listIncomingShares(): Promise<IncomingShare[]> {
       id: row.share_id,
       ownerName: row.owner_name,
       status: row.status as ShareStatus,
-      scopes: { symptoms: row.share_symptoms, intimacy: row.share_intimacy, notes: row.share_notes },
+      scopes: {
+        symptoms: row.share_symptoms,
+        intimacy: row.share_intimacy,
+        notes: row.share_notes,
+        canEdit: row.can_edit,
+      },
       invitedAt: row.invited_at,
       acceptedAt: row.accepted_at,
     }));
@@ -225,6 +248,7 @@ export function parseSharedData(raw: Json): SharedData {
       symptoms: root.share_symptoms === true,
       intimacy: root.share_intimacy === true,
       notes: root.share_notes === true,
+      canEdit: root.can_edit === true,
     },
     settings: {
       averageCycleLength:
@@ -265,4 +289,43 @@ export async function getSharedData(shareId: string): Promise<SharedData> {
   const { data, error } = await getSupabase().rpc('get_partner_shared_data', { p_share_id: shareId });
   if (error) throw error;
   return parseSharedData(data);
+}
+
+// -----------------------------------------------------------------------------
+// Partner edits (only when the owner allowed it; never deletes)
+// -----------------------------------------------------------------------------
+
+export async function partnerSavePeriod(shareId: string, input: PeriodInput, id?: string): Promise<void> {
+  const { error } = await getSupabase().rpc('partner_save_period', {
+    p_share_id: shareId,
+    p_period_id: id ?? null,
+    p_start_date: input.startDate,
+    p_end_date: input.endDate,
+  });
+  if (error) throw error;
+}
+
+export async function partnerSaveSymptoms(shareId: string, input: SymptomInput, id?: string): Promise<void> {
+  const { error } = await getSupabase().rpc('partner_save_symptoms', {
+    p_share_id: shareId,
+    p_log_id: id ?? null,
+    p_symptom_date: input.date,
+    p_symptoms: SYMPTOM_KEYS.filter((k) => input.symptoms.includes(k)),
+    p_mood: input.mood,
+    p_notes: input.notes?.trim() || null,
+  });
+  if (error) throw error;
+}
+
+export async function partnerSaveIntimacy(shareId: string, input: IntimacyInput, id?: string): Promise<void> {
+  const { error } = await getSupabase().rpc('partner_save_intimacy', {
+    p_share_id: shareId,
+    p_record_id: id ?? null,
+    p_occurred_at: input.occurredAt,
+    p_protection_method: input.protectionMethod,
+    p_ejaculation: input.ejaculation,
+    p_emergency_contraception: input.emergencyContraception,
+    p_notes: input.notes?.trim() || null,
+  });
+  if (error) throw error;
 }

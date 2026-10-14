@@ -64,7 +64,13 @@ const RPCS: Record<string, unknown> = {
   },
 };
 
-function fakeClientByTable(tables: Record<string, unknown> = TABLES): LunelleSupabaseClient {
+/** Every supabase.rpc() call made during a test. */
+const rpcCalls: Array<{ name: string; args: unknown }> = [];
+
+function fakeClientByTable(
+  tables: Record<string, unknown> = TABLES,
+  rpcs: Record<string, unknown> = RPCS,
+): LunelleSupabaseClient {
   return {
     from(table: string) {
       const builder: unknown = new Proxy(
@@ -80,8 +86,9 @@ function fakeClientByTable(tables: Record<string, unknown> = TABLES): LunelleSup
       );
       return builder;
     },
-    rpc(name: string) {
-      return Promise.resolve({ data: RPCS[name] ?? null, error: null });
+    rpc(name: string, args?: unknown) {
+      rpcCalls.push({ name, args });
+      return Promise.resolve({ data: rpcs[name] ?? null, error: null });
     },
   } as unknown as LunelleSupabaseClient;
 }
@@ -98,10 +105,13 @@ beforeAll(() => {
   );
 });
 
-afterEach(() => setSupabaseClientForTesting(null));
+afterEach(() => {
+  setSupabaseClientForTesting(null);
+  rpcCalls.length = 0;
+});
 
-function renderAt(path: string, tables: Record<string, unknown> = TABLES) {
-  setSupabaseClientForTesting(fakeClientByTable(tables));
+function renderAt(path: string, tables: Record<string, unknown> = TABLES, rpcs: Record<string, unknown> = RPCS) {
+  setSupabaseClientForTesting(fakeClientByTable(tables, rpcs));
   const router = createMemoryRouter(routes, { initialEntries: [path] });
   render(
     <ToastProvider>
@@ -197,6 +207,46 @@ describe('signed-in app', () => {
     expect(screen.getAllByRole('link', { name: 'Shared' }).length).toBeGreaterThan(0);
     expect(screen.queryByRole('link', { name: 'Calendar' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'New record' })).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Record your first period' })).toBeInTheDocument();
+    // Nothing nudges a viewer to record periods.
+    expect(screen.queryByRole('button', { name: /Record period|Record your first period/ })).not.toBeInTheDocument();
+  });
+
+  it('keeps a viewer’s Settings focused: no cycle settings or invite form', async () => {
+    renderAt('/settings', { ...TABLES, periods: [], intercourse_records: [], symptoms: [] });
+    expect(await screen.findByRole('button', { name: 'Start tracking my own cycle' })).toBeInTheDocument();
+    expect(screen.queryByText('Cycle settings')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Partner’s email')).not.toBeInTheDocument();
+  });
+
+  it('lets a partner with edit permission add records on the owner’s behalf — but never delete', async () => {
+    const editable = {
+      ...RPCS,
+      get_partner_invitations: (RPCS.get_partner_invitations as object[]).map((r) => ({ ...r, can_edit: true })),
+      get_partner_shared_data: { ...(RPCS.get_partner_shared_data as object), can_edit: true },
+    };
+    const user = renderAt('/partner', { ...TABLES, periods: [], intercourse_records: [], symptoms: [] }, editable);
+    expect(await screen.findByText(/You can add and edit records./)).toBeInTheDocument();
+
+    // Editing the existing (shared) period: no delete option.
+    await user.click(screen.getByRole('button', { name: 'Edit period' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Edit period' });
+    expect(within(dialog).getByText(/Adding to Jordan’s records/)).toBeInTheDocument();
+    expect(within(dialog).queryByRole('button', { name: 'Delete' })).not.toBeInTheDocument();
+    await user.type(within(dialog).getByLabelText(/End date/), day(-1));
+    await user.click(within(dialog).getByRole('button', { name: 'Save changes' }));
+    await screen.findByText('Period updated');
+    expect(rpcCalls.find((c) => c.name === 'partner_save_period')?.args).toEqual({
+      p_share_id: 'share-1',
+      p_period_id: 'jp1',
+      p_start_date: day(-3),
+      p_end_date: day(-1),
+    });
+  });
+
+  it('hides add/edit controls from a view-only partner', async () => {
+    renderAt('/partner', { ...TABLES, periods: [], intercourse_records: [], symptoms: [] });
+    expect(await screen.findByText(/View only./)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Edit period' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Record period' })).not.toBeInTheDocument();
   });
 });

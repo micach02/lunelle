@@ -34,7 +34,7 @@ export type Database = {
         Relationships: [];
       };
       periods: {
-        Row: { id: string; user_id: string; start_date: string; end_date: string | null } & Timestamps;
+        Row: { id: string; user_id: string; start_date: string; end_date: string | null; entered_by_partner: boolean } & Timestamps;
         Insert: { id?: string; user_id: string; start_date: string; end_date?: string | null } & OptionalTimestamps;
         Update: { start_date?: string; end_date?: string | null } & OptionalTimestamps;
         Relationships: [];
@@ -48,6 +48,7 @@ export type Database = {
           ejaculation: string;
           emergency_contraception: boolean;
           notes: string | null;
+          entered_by_partner: boolean;
         } & Timestamps;
         Insert: {
           id?: string;
@@ -75,6 +76,7 @@ export type Database = {
           symptoms: Json;
           mood: string | null;
           notes: string | null;
+          entered_by_partner: boolean;
         } & Timestamps;
         Insert: {
           id?: string;
@@ -102,6 +104,7 @@ export type Database = {
           share_symptoms: boolean;
           share_intimacy: boolean;
           share_notes: boolean;
+          can_edit: boolean;
           last_emailed_at: string | null;
           accepted_at: string | null;
           ended_at: string | null;
@@ -137,11 +140,18 @@ export type Database = {
           p_share_symptoms: boolean;
           p_share_intimacy: boolean;
           p_share_notes: boolean;
+          p_can_edit: boolean;
         };
         Returns: string;
       };
       update_partner_share: {
-        Args: { p_share_id: string; p_share_symptoms: boolean; p_share_intimacy: boolean; p_share_notes: boolean };
+        Args: {
+          p_share_id: string;
+          p_share_symptoms: boolean;
+          p_share_intimacy: boolean;
+          p_share_notes: boolean;
+          p_can_edit: boolean;
+        };
         Returns: undefined;
       };
       revoke_partner_share: { Args: { p_share_id: string }; Returns: undefined };
@@ -158,6 +168,7 @@ export type Database = {
           share_symptoms: boolean;
           share_intimacy: boolean;
           share_notes: boolean;
+          can_edit: boolean;
           invited_at: string;
           accepted_at: string | null;
         }[];
@@ -165,6 +176,33 @@ export type Database = {
       accept_partner_invite: { Args: { p_share_id: string }; Returns: undefined };
       leave_partner_share: { Args: { p_share_id: string }; Returns: undefined };
       get_partner_shared_data: { Args: { p_share_id: string }; Returns: Json };
+      partner_save_period: {
+        Args: { p_share_id: string; p_period_id: string | null; p_start_date: string; p_end_date: string | null };
+        Returns: string;
+      };
+      partner_save_symptoms: {
+        Args: {
+          p_share_id: string;
+          p_log_id: string | null;
+          p_symptom_date: string;
+          p_symptoms: Json;
+          p_mood: string | null;
+          p_notes: string | null;
+        };
+        Returns: string;
+      };
+      partner_save_intimacy: {
+        Args: {
+          p_share_id: string;
+          p_record_id: string | null;
+          p_occurred_at: string;
+          p_protection_method: string;
+          p_ejaculation: string;
+          p_emergency_contraception: boolean;
+          p_notes: string | null;
+        };
+        Returns: string;
+      };
     };
     Enums: { [_ in never]: never };
     CompositeTypes: { [_ in never]: never };

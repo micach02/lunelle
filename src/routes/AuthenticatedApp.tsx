@@ -7,7 +7,7 @@ import { useViewerMode } from '@/features/partner/useViewerMode';
 import { ErrorState, Skeleton } from '@/components/ui/Feedback';
 import { useAuth } from '@/features/auth/AuthProvider';
 import { QuickAddDialog } from '@/features/tracking/QuickAddDialog';
-import { RecordDialogsProvider } from '@/features/tracking/RecordDialogs';
+import { OwnRecordDialogsProvider } from '@/features/tracking/RecordDialogs';
 import { TrackingDataProvider, useTracking } from '@/features/tracking/TrackingDataProvider';
 
 export function PageSkeleton() {
@@ -62,9 +62,9 @@ export function AuthenticatedApp() {
   return (
     <TrackingDataProvider key={user.id} userId={user.id} fallbackName={fallbackName}>
       <PartnerAccessProvider key={user.id}>
-        <RecordDialogsProvider>
+        <OwnRecordDialogsProvider>
           <Shell />
-        </RecordDialogsProvider>
+        </OwnRecordDialogsProvider>
       </PartnerAccessProvider>
     </TrackingDataProvider>
   );

@@ -17,10 +17,10 @@ describe('parseSharedData', () => {
     });
     expect(data).toEqual({
       ownerName: 'Sarah',
-      scopes: { symptoms: true, intimacy: false, notes: false },
+      scopes: { symptoms: true, intimacy: false, notes: false, canEdit: false },
       settings: { averageCycleLength: 31, averagePeriodLength: 6 },
-      periods: [{ id: 'p1', startDate: '2026-09-29', endDate: null }],
-      symptoms: [{ id: 's1', date: '2026-09-30', symptoms: ['cramps'], mood: 'tired', notes: null }],
+      periods: [{ id: 'p1', startDate: '2026-09-29', endDate: null, enteredByPartner: false }],
+      symptoms: [{ id: 's1', date: '2026-09-30', symptoms: ['cramps'], mood: 'tired', notes: null, enteredByPartner: false }],
       intimacy: null,
     });
   });
@@ -38,13 +38,16 @@ describe('parseSharedData', () => {
 
 describe('describeScopes', () => {
   it('always includes cycle data and lists extra categories', () => {
-    expect(describeScopes({ symptoms: false, intimacy: false, notes: false })).toBe('Cycle phases & periods.');
-    expect(describeScopes({ symptoms: true, intimacy: true, notes: true })).toBe(
+    expect(describeScopes({ symptoms: false, intimacy: false, notes: false, canEdit: false })).toBe('Cycle phases & periods.');
+    expect(describeScopes({ symptoms: true, intimacy: true, notes: true, canEdit: false })).toBe(
       'Cycle phases & periods, symptoms & mood and intimacy records, including notes.',
+    );
+    expect(describeScopes({ symptoms: false, intimacy: false, notes: false, canEdit: true })).toBe(
+      'Cycle phases & periods. Can add and edit (not delete) records.',
     );
   });
 
   it('ignores the notes flag when nothing with notes is shared', () => {
-    expect(describeScopes({ symptoms: false, intimacy: false, notes: true })).toBe('Cycle phases & periods.');
+    expect(describeScopes({ symptoms: false, intimacy: false, notes: true, canEdit: false })).toBe('Cycle phases & periods.');
   });
 });

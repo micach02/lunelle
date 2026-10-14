@@ -7,7 +7,7 @@ import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { Dialog } from '@/components/ui/Dialog';
 import { ChoiceGroup, Field, FormError, Input, Textarea } from '@/components/ui/Form';
 import { useToast } from '@/components/ui/Toast';
-import { useTracking } from '@/features/tracking/TrackingDataProvider';
+import { useRecordStore } from '@/features/tracking/recordStore';
 import { createSymptomSchema, type SymptomFormValues } from '@/features/tracking/schemas';
 import type { ISODate } from '@/lib/dates';
 import { getErrorMessage } from '@/lib/errors';
@@ -21,7 +21,7 @@ interface SymptomFormDialogProps {
 }
 
 export function SymptomFormDialog({ onClose, log, defaultDate }: SymptomFormDialogProps) {
-  const { today, symptoms, saveSymptoms, deleteSymptoms } = useTracking();
+  const { today, symptoms, saveSymptoms, deleteSymptoms, notesEditable, onBehalfOf } = useRecordStore();
   const toast = useToast();
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -68,10 +68,14 @@ export function SymptomFormDialog({ onClose, log, defaultDate }: SymptomFormDial
         onClose={onClose}
         dismissible={!isSubmitting}
         title={isEdit ? 'Edit symptoms & mood' : 'Log symptoms & mood'}
-        description="Spotting patterns over time can help you understand your cycle."
+        description={
+          onBehalfOf
+            ? `Adding to ${onBehalfOf}’s records. They’ll see this was added by you.`
+            : 'Spotting patterns over time can help you understand your cycle.'
+        }
         footer={
           <>
-            {isEdit && (
+            {isEdit && deleteSymptoms && (
               <Button
                 variant="ghost"
                 className="text-danger hover:text-danger sm:mr-auto"
@@ -136,6 +140,7 @@ export function SymptomFormDialog({ onClose, log, defaultDate }: SymptomFormDial
             )}
           />
 
+          {notesEditable && (
           <Field label="Notes" optional error={errors.notes?.message}>
             {({ id, describedBy, invalid }) => (
               <Textarea
@@ -149,6 +154,7 @@ export function SymptomFormDialog({ onClose, log, defaultDate }: SymptomFormDial
               />
             )}
           </Field>
+          )}
           <FormError message={submitError} />
         </form>
       </Dialog>
@@ -160,7 +166,7 @@ export function SymptomFormDialog({ onClose, log, defaultDate }: SymptomFormDial
         confirmLabel="Delete log"
         destructive
         onConfirm={async () => {
-          if (!log) return;
+          if (!log || !deleteSymptoms) return;
           await deleteSymptoms(log.id);
           toast.success('Log deleted');
           onClose();

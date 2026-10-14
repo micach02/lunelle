@@ -42,6 +42,12 @@ export function ShareScopeFields({
         disabled={!notesAvailable}
         onChange={(e) => set({ notes: e.target.checked })}
       />
+      <Checkbox
+        label="Allow adding and editing"
+        description="Your partner can log periods, and symptoms or intimacy if shared, and fix mistakes. They can never delete anything, and records they add are labelled."
+        checked={value.canEdit}
+        onChange={(e) => set({ canEdit: e.target.checked })}
+      />
     </fieldset>
   );
 }

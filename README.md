@@ -36,7 +36,7 @@ Lunelle is a private, mobile-first web app for tracking menstrual periods, cycle
 | **Symptoms & mood** | Cramps, headache, bloating, breast tenderness, fatigue, acne, back pain, nausea and other symptoms, plus six moods and notes. One log per day. |
 | **Insights** | Average, shortest and longest cycle; average period length; cycle-length and period-length charts (each with a table view); symptom trends with the phase each is most common in; mood distribution; full cycle history. |
 | **Settings** | Profile, cycle-length fallbacks, a privacy explanation, change email or password, sign out, and permanent account deletion (type `DELETE` to confirm). |
-| **Partner sharing** | Invite one partner by email to **view** your cycle. Cycle phases and periods are always included. Symptoms & mood, intimacy records and notes are separate opt-in switches, all off by default. The partner can never edit anything, and you can change what's shared or stop sharing at any time. The invite email is sent automatically by a Supabase Edge Function. **Partners never sign up or set a password**: the email contains a one-time sign-in link, and people who only view get a focused "viewer mode". |
+| **Partner sharing** | Invite one partner by email to **view** your cycle. Cycle phases and periods are always included. Symptoms & mood, intimacy records and notes are separate opt-in switches, all off by default. The partner can never edit anything, and you can change what's shared or stop sharing at any time. The invite email is sent automatically by a Supabase Edge Function. **Partners never sign up or set a password**: the email contains a one-time sign-in link, and people who only view get a focused "viewer mode" with no prompts to record periods. Optionally, the owner can **allow the partner to add and edit** records (never delete). Anything a partner adds is labelled "Added by partner". |
 | **PWA** | Installable manifest and icons. The service worker caches only the static app shell and never caches API data. |
 
 **Recorded vs. estimated.** Every value in the UI is labelled. Only period days you logged are **Recorded**. Phases, ovulation, the fertile window and future periods are marked **≈ Estimated**. Lunelle never shows a pregnancy probability and never uses wording like "safe day".
@@ -115,6 +115,7 @@ Email links use the **PKCE** flow, so verification and reset links must be opene
 | `20261004000200_row_level_security.sql` | Enables RLS, revokes all privileges from `anon`, and adds per-operation owner policies for `authenticated`. |
 | `20261004000300_auth_functions.sql` | `handle_new_user()` (creates the profile and default settings on sign-up) and `delete_own_account()` (permanently deletes the caller's account and data). |
 | `20261005000100_partner_sharing.sql` | The `partner_shares` table (the owner can only read it; every change goes through functions), the invite, accept, decline and revoke functions, and `get_partner_shared_data()`, which is the only way a partner can read shared data. Also updates `delete_own_account()` to remove shares. |
+| `20261014000100_partner_edit_access.sql` | Optional partner edit access (`can_edit`, off by default). Partners add and edit records only through `partner_save_period`, `partner_save_symptoms` and `partner_save_intimacy`. They need an accepted share with editing allowed and the category shared, can never delete, and can only touch notes when notes are shared. Rows they write are flagged `entered_by_partner`. |
 | `20261011000100_partner_signin_links.sql` | `claim_partner_signin_link()`, callable only by the service role. It allows a fresh partner sign-in email only for addresses with an active share, at most once a minute and ten times a day. Request rows are kept for two days. |
 
 **Option A: Supabase CLI (recommended)**
@@ -126,7 +127,7 @@ npx supabase link --project-ref YOUR_PROJECT_REF
 npx supabase db push
 ```
 
-**Option B: SQL editor.** Paste and run the five files in order.
+**Option B: SQL editor.** Paste and run the six files in order.
 
 After changing the schema, regenerate types:
 `npx supabase gen types typescript --project-id YOUR_PROJECT_REF > src/types/database.ts`
@@ -186,6 +187,7 @@ npm run lint
 | `appSmoke.test.tsx` | Mounts the real route tree for a signed-in user with seeded data and renders every screen. |
 | `tests/db/partnerSharing.test.ts` | Invite rules (no self-invite, one active share, daily limit), verified-email matching, accept, decline and revoke, category and notes filtering, no direct table access for partners, owner-only scope changes, resend cooldown. |
 | `tests/edge/inviteEmail.test.ts` | Invite and sign-in email content: no health data, HTML escaping of names, a header-safe subject line, sub-path-aware links. |
+| `tests/db/partnerEdit.test.ts` | Partner edit access: blocked without permission or for strangers, owner-toggleable, categories enforced, notes protected, no deletes, no editing other people's records, `entered_by_partner` flag. |
 | `tests/db/partnerSignin.test.ts` | Sign-in link requests: only for invited addresses, cooldown, daily cap, stops on revoke, never callable from a browser. |
 | `partnerAccess.test.tsx` | Password-less partner access: link sign-in (token removed from the URL), expired links, the generic "link sent" reply, redirects. |
 | `tests/db/rls.test.ts` | RLS and grants on every table, owner CRUD, cross-user isolation, anonymous denial, constraints, sign-up trigger, account deletion. |

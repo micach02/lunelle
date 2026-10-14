@@ -8,7 +8,7 @@ import { Dialog } from '@/components/ui/Dialog';
 import { Field, FormError, Input } from '@/components/ui/Form';
 import { DataBadge } from '@/components/ui/Feedback';
 import { useToast } from '@/components/ui/Toast';
-import { useTracking } from '@/features/tracking/TrackingDataProvider';
+import { useRecordStore } from '@/features/tracking/recordStore';
 import { createPeriodSchema, type PeriodFormValues } from '@/features/tracking/schemas';
 import { diffInDays, isISODate, pluralizeDays, type ISODate } from '@/lib/dates';
 import { getErrorMessage } from '@/lib/errors';
@@ -21,7 +21,7 @@ interface PeriodFormDialogProps {
 }
 
 export function PeriodFormDialog({ onClose, period, defaultStartDate }: PeriodFormDialogProps) {
-  const { today, periods, savePeriod, deletePeriod } = useTracking();
+  const { today, periods, savePeriod, deletePeriod, onBehalfOf } = useRecordStore();
   const toast = useToast();
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -67,10 +67,14 @@ export function PeriodFormDialog({ onClose, period, defaultStartDate }: PeriodFo
         onClose={onClose}
         dismissible={!isSubmitting}
         title={isEdit ? 'Edit period' : 'Record period'}
-        description="Your recorded periods are what Lunelle uses to estimate your cycle."
+        description={
+          onBehalfOf
+            ? `Adding to ${onBehalfOf}’s records. They’ll see this was added by you.`
+            : 'Your recorded periods are what Lunelle uses to estimate your cycle.'
+        }
         footer={
           <>
-            {isEdit && (
+            {isEdit && deletePeriod && (
               <Button
                 variant="ghost"
                 className="text-danger hover:text-danger sm:mr-auto"
@@ -136,7 +140,7 @@ export function PeriodFormDialog({ onClose, period, defaultStartDate }: PeriodFo
         confirmLabel="Delete period"
         destructive
         onConfirm={async () => {
-          if (!period) return;
+          if (!period || !deletePeriod) return;
           await deletePeriod(period.id);
           toast.success('Period deleted');
           onClose();

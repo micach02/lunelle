@@ -18,7 +18,7 @@ import { ShareScopeFields } from './ShareScopeFields';
 
 const RESEND_COOLDOWN_MS = 60_000; // matches record_partner_invite_email()
 
-const DEFAULT_SCOPES: ShareScopes = { symptoms: false, intimacy: false, notes: false };
+const DEFAULT_SCOPES: ShareScopes = { symptoms: false, intimacy: false, notes: false, canEdit: false };
 
 const inviteSchema = z.object({
   email: z.string().trim().min(1, 'Enter your partner’s email address.').email('Enter a valid email address.'),
@@ -26,7 +26,7 @@ const inviteSchema = z.object({
 type InviteValues = z.infer<typeof inviteSchema>;
 
 function sameScopes(a: ShareScopes, b: ShareScopes) {
-  return a.symptoms === b.symptoms && a.intimacy === b.intimacy && a.notes === b.notes;
+  return a.symptoms === b.symptoms && a.intimacy === b.intimacy && a.notes === b.notes && a.canEdit === b.canEdit;
 }
 
 function InviteForm({ onCreated }: { onCreated: (share: OutgoingShare | null) => void }) {

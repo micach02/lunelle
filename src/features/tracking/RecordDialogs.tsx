@@ -4,6 +4,7 @@ import { PeriodFormDialog } from '@/features/periods/components/PeriodFormDialog
 import { SymptomFormDialog } from '@/features/symptoms/components/SymptomFormDialog';
 import type { ISODate } from '@/lib/dates';
 import type { IntimacyRecord, Period, SymptomLog } from '@/types/domain';
+import { RecordStoreContext, type RecordStore } from './recordStore';
 import { useTracking } from './TrackingDataProvider';
 
 type DialogState =
@@ -21,11 +22,15 @@ interface RecordDialogsApi {
 
 const RecordDialogsContext = createContext<RecordDialogsApi | null>(null);
 
-/** One place that owns the add/edit dialogs so any screen can open them. */
-export function RecordDialogsProvider({ children }: { children: ReactNode }) {
-  const { symptoms, today } = useTracking();
+/**
+ * Owns the add/edit dialogs so any screen can open them. The dialogs read
+ * from and save to `store`; providers can be nested (e.g. a partner editing a
+ * shared cycle inside their own app).
+ */
+export function RecordDialogsProvider({ store, children }: { store: RecordStore; children: ReactNode }) {
   const [state, setState] = useState<DialogState>(null);
   const close = useCallback(() => setState(null), []);
+  const { symptoms, today } = store;
 
   const api = useMemo<RecordDialogsApi>(
     () => ({
@@ -41,19 +46,43 @@ export function RecordDialogsProvider({ children }: { children: ReactNode }) {
   );
 
   return (
-    <RecordDialogsContext.Provider value={api}>
-      {children}
-      {state?.type === 'period' && (
-        <PeriodFormDialog onClose={close} period={state.period} defaultStartDate={state.defaultDate} />
-      )}
-      {state?.type === 'intimacy' && (
-        <IntimacyFormDialog onClose={close} record={state.record} defaultDate={state.defaultDate} />
-      )}
-      {state?.type === 'symptoms' && (
-        <SymptomFormDialog onClose={close} log={state.log} defaultDate={state.defaultDate} />
-      )}
-    </RecordDialogsContext.Provider>
+    <RecordStoreContext.Provider value={store}>
+      <RecordDialogsContext.Provider value={api}>
+        {children}
+        {state?.type === 'period' && (
+          <PeriodFormDialog onClose={close} period={state.period} defaultStartDate={state.defaultDate} />
+        )}
+        {state?.type === 'intimacy' && (
+          <IntimacyFormDialog onClose={close} record={state.record} defaultDate={state.defaultDate} />
+        )}
+        {state?.type === 'symptoms' && (
+          <SymptomFormDialog onClose={close} log={state.log} defaultDate={state.defaultDate} />
+        )}
+      </RecordDialogsContext.Provider>
+    </RecordStoreContext.Provider>
   );
+}
+
+/** The signed-in person's own records. */
+export function OwnRecordDialogsProvider({ children }: { children: ReactNode }) {
+  const tracking = useTracking();
+  const store = useMemo<RecordStore>(
+    () => ({
+      today: tracking.today,
+      timeline: tracking.timeline,
+      periods: tracking.periods,
+      symptoms: tracking.symptoms,
+      savePeriod: tracking.savePeriod,
+      saveIntimacy: tracking.saveIntimacy,
+      saveSymptoms: tracking.saveSymptoms,
+      deletePeriod: tracking.deletePeriod,
+      deleteIntimacy: tracking.deleteIntimacy,
+      deleteSymptoms: tracking.deleteSymptoms,
+      notesEditable: true,
+    }),
+    [tracking],
+  );
+  return <RecordDialogsProvider store={store}>{children}</RecordDialogsProvider>;
 }
 
 export function useRecordDialogs(): RecordDialogsApi {

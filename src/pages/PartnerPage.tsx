@@ -10,8 +10,6 @@ import { useAuth } from '@/features/auth/AuthProvider';
 import { usePartnerAccess } from '@/features/partner/PartnerAccessProvider';
 import { SharedCycleView } from '@/features/partner/components/SharedCycleView';
 import { describeScopes } from '@/features/partner/scopes';
-import { useViewerMode } from '@/features/partner/useViewerMode';
-import { useRecordDialogs } from '@/features/tracking/RecordDialogs';
 import type { IncomingShare } from '@/features/partner/services/partnerService';
 import { cn } from '@/lib/cn';
 import { getErrorMessage } from '@/lib/errors';
@@ -73,8 +71,6 @@ export function PartnerPage() {
   const accepted = incoming.filter((s) => s.status === 'accepted');
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [confirmLeave, setConfirmLeave] = useState(false);
-  const viewerMode = useViewerMode();
-  const dialogs = useRecordDialogs();
   const active = accepted.find((s) => s.id === selectedId) ?? accepted[0];
 
   return (
@@ -156,14 +152,6 @@ export function PartnerPage() {
         </section>
       )}
 
-      {viewerMode && (
-        <p className="border-t border-border pt-5 text-sm text-ink-muted">
-          Want to track your own cycle too?{' '}
-          <button type="button" className="font-medium text-accent hover:underline" onClick={() => dialogs.openPeriod()}>
-            Record your first period
-          </button>
-        </p>
-      )}
     </div>
   );
 }

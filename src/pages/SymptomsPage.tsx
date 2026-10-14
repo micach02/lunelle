@@ -8,6 +8,7 @@ import { PhaseBadge } from '@/features/cycle/components/PhaseBadge';
 import { getDayInfo } from '@/features/cycle/services/cycleCalculator';
 import { SymptomSummary } from '@/features/symptoms/components/SymptomSummary';
 import { useRecordDialogs } from '@/features/tracking/RecordDialogs';
+import { PartnerBadge } from '@/features/partner/components/PartnerBadge';
 import { useTracking } from '@/features/tracking/TrackingDataProvider';
 import { formatDate } from '@/lib/dates';
 import { groupByMonth } from '@/lib/grouping';
@@ -54,6 +55,7 @@ export function SymptomsPage() {
                           <div className="flex flex-wrap items-center gap-2">
                             <h3 className="font-medium text-ink">{formatDate(log.date, 'EEEE, MMM d')}</h3>
                             {info.phase && <PhaseBadge phase={info.phase} size="sm" estimated={info.isEstimated} />}
+                            {log.enteredByPartner && <PartnerBadge />}
                           </div>
                           <Button
                             variant="ghost"

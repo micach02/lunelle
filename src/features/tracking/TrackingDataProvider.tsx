@@ -119,6 +119,25 @@ export function TrackingDataProvider({
     };
   }, [userId, fallbackName, reloadKey]);
 
+  // Quietly re-read when the app returns to the foreground, so records a
+  // partner added appear without a manual refresh. At most once a minute.
+  useEffect(() => {
+    let last = Date.now();
+    const onVisible = () => {
+      if (document.visibilityState !== 'visible' || Date.now() - last < 60_000) return;
+      last = Date.now();
+      Promise.all([periodService.listPeriods(), intimacyService.listIntimacyRecords(), symptomService.listSymptomLogs()])
+        .then(([per, int, sym]) => {
+          setPeriods(per);
+          setIntimacy(int);
+          setSymptoms(sym);
+        })
+        .catch((e: unknown) => logError('tracking.refresh', e));
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => document.removeEventListener('visibilitychange', onVisible);
+  }, [userId]);
+
   const reload = useCallback(() => {
     setStatus('loading');
     setError(null);

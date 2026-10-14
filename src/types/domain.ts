@@ -41,13 +41,18 @@ export interface CycleSettings {
   averagePeriodLength: number;
 }
 
-export interface Period {
+/** Set on records a partner with edit permission added or changed. */
+interface PartnerFlag {
+  enteredByPartner?: boolean;
+}
+
+export interface Period extends PartnerFlag {
   id: string;
   startDate: ISODate;
   endDate: ISODate | null;
 }
 
-export interface IntimacyRecord {
+export interface IntimacyRecord extends PartnerFlag {
   id: string;
   /** UTC ISO timestamp */
   occurredAt: string;
@@ -57,7 +62,7 @@ export interface IntimacyRecord {
   notes: string | null;
 }
 
-export interface SymptomLog {
+export interface SymptomLog extends PartnerFlag {
   id: string;
   date: ISODate;
   symptoms: SymptomKey[];
@@ -65,8 +70,8 @@ export interface SymptomLog {
   notes: string | null;
 }
 
-export type PeriodInput = Omit<Period, 'id'>;
-export type IntimacyInput = Omit<IntimacyRecord, 'id'>;
-export type SymptomInput = Omit<SymptomLog, 'id'>;
+export type PeriodInput = Omit<Period, 'id' | 'enteredByPartner'>;
+export type IntimacyInput = Omit<IntimacyRecord, 'id' | 'enteredByPartner'>;
+export type SymptomInput = Omit<SymptomLog, 'id' | 'enteredByPartner'>;
 export type ProfileInput = Omit<Profile, 'id'>;
 export type CycleSettingsUpdate = Pick<CycleSettings, 'averageCycleLength' | 'averagePeriodLength'>;

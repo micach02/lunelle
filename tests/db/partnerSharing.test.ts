@@ -174,7 +174,7 @@ describe('accepting and reading shared data', () => {
     expect(data.symptoms).toEqual([expect.objectContaining({ symptoms: ['cramps'], mood: 'tired', notes: null })]);
     expect(data.intimacy).toEqual([expect.objectContaining({ protection_method: 'condom', notes: null })]);
 
-    await asUser(db, OWNER, () => db.query(`select public.update_partner_share($1, true, true, true)`, [id]));
+    await asUser(db, OWNER, () => db.query(`select public.update_partner_share($1, true, true, true, false)`, [id]));
     const withNotes = await sharedData(PARTNER, id);
     expect(withNotes.symptoms).toEqual([expect.objectContaining({ notes: 'private symptom note' })]);
     expect(withNotes.intimacy).toEqual([expect.objectContaining({ notes: 'private intimacy note' })]);
@@ -205,7 +205,7 @@ describe('accepting and reading shared data', () => {
     const id = await invite('alex@example.com');
     await accept(PARTNER, id);
     await expect(
-      asUser(db, PARTNER, () => db.query(`select public.update_partner_share($1, true, true, true)`, [id])),
+      asUser(db, PARTNER, () => db.query(`select public.update_partner_share($1, true, true, true, false)`, [id])),
     ).rejects.toMatchObject({ code: 'LU004' });
     const data = await sharedData(PARTNER, id);
     expect(data.intimacy).toBeNull();

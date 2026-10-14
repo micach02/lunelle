@@ -26,7 +26,7 @@ describe('periods', () => {
   it('lists periods newest first and maps rows', async () => {
     const fake = useFake([{ data: [{ id: 'a', start_date: '2026-09-01', end_date: null }], error: null }]);
     await expect(periodService.listPeriods()).resolves.toEqual([
-      { id: 'a', startDate: '2026-09-01', endDate: null },
+      { id: 'a', startDate: '2026-09-01', endDate: null, enteredByPartner: false },
     ]);
     expect(fake.calls[0].table).toBe('periods');
     expect(fake.argsOf(0, 'order')).toEqual(['start_date', { ascending: false }]);
@@ -36,7 +36,7 @@ describe('periods', () => {
     const fake = useFake([{ data: { id: 'p1', start_date: '2026-10-01', end_date: '2026-10-05' }, error: null }]);
     const created = await periodService.createPeriod(USER, { startDate: '2026-10-01', endDate: '2026-10-05' });
     expect(fake.argsOf(0, 'insert')).toEqual([{ user_id: USER, start_date: '2026-10-01', end_date: '2026-10-05' }]);
-    expect(created).toEqual({ id: 'p1', startDate: '2026-10-01', endDate: '2026-10-05' });
+    expect(created).toEqual({ id: 'p1', startDate: '2026-10-01', endDate: '2026-10-05', enteredByPartner: false });
   });
 
   it('updates and deletes by id', async () => {

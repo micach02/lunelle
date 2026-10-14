@@ -9,9 +9,11 @@ import {
   type SymptomLog,
 } from '@/types/domain';
 
-const COLUMNS = 'id, symptom_date, symptoms, mood, notes';
+const COLUMNS = 'id, symptom_date, symptoms, mood, notes, entered_by_partner';
 
-type Row = Pick<TableRow<'symptoms'>, 'id' | 'symptom_date' | 'symptoms' | 'mood' | 'notes'>;
+type Row = Pick<TableRow<'symptoms'>, 'id' | 'symptom_date' | 'symptoms' | 'mood' | 'notes'> & {
+  entered_by_partner?: boolean;
+};
 
 function parseSymptoms(value: Json): SymptomKey[] {
   if (!Array.isArray(value)) return [];
@@ -27,6 +29,7 @@ export function mapSymptomLog(row: Row): SymptomLog {
     symptoms: parseSymptoms(row.symptoms),
     mood: row.mood && (MOODS as readonly string[]).includes(row.mood) ? (row.mood as Mood) : null,
     notes: row.notes,
+    enteredByPartner: row.entered_by_partner === true,
   };
 }
 

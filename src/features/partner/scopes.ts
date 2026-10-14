@@ -7,5 +7,6 @@ export function describeScopes(scopes: ShareScopes): string {
   if (scopes.intimacy) parts.push('intimacy records');
   const list = parts.length > 1 ? `${parts.slice(0, -1).join(', ')} and ${parts.at(-1)}` : parts[0];
   const hasNotes = scopes.notes && (scopes.symptoms || scopes.intimacy);
-  return `${list[0].toUpperCase()}${list.slice(1)}${hasNotes ? ', including notes' : ''}.`;
+  const editing = scopes.canEdit ? ' Can add and edit (not delete) records.' : '';
+  return `${list[0].toUpperCase()}${list.slice(1)}${hasNotes ? ', including notes' : ''}.${editing}`;
 }

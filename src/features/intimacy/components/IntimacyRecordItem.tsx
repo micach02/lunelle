@@ -4,6 +4,7 @@ import { cn } from '@/lib/cn';
 import type { FertileContext } from '@/features/cycle/services/cycleCalculator';
 import type { IntimacyRecord } from '@/types/domain';
 import { EJACULATION_LABELS, PROTECTION_LABELS } from '../constants';
+import { PartnerBadge } from '@/features/partner/components/PartnerBadge';
 import { FertileContextNote } from './FertileContextNote';
 
 export function IntimacyRecordItem({
@@ -33,7 +34,10 @@ export function IntimacyRecordItem({
               <time dateTime={record.occurredAt}>{format(when, compact ? 'MMM d' : 'EEEE, MMMM d')}</time>
               <span className="font-normal text-ink-muted"> · {format(when, 'p')}</span>
             </h3>
-            <p className="text-sm text-ink-muted">Intimacy recorded</p>
+            <p className="flex flex-wrap items-center gap-2 text-sm text-ink-muted">
+              Intimacy recorded
+              {record.enteredByPartner && <PartnerBadge />}
+            </p>
           </div>
           {onEdit && (
             <button

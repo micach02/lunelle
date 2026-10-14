@@ -20,6 +20,7 @@ const POSTGRES_MESSAGES: Record<string, string> = {
   LU004: 'This invitation is no longer active.',
   LU005: 'Please verify your email address first.',
   LU006: 'An invitation email was just sent. Please wait a minute before resending.',
+  LU007: 'You don’t have permission to edit these records. The owner may have changed what’s shared.',
 };
 
 /** An error whose message is already written for the user. */
